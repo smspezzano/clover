@@ -26,11 +26,16 @@ if TARGET == "development":
     SPECS_PATH = environ("SPECS_PATH")
     PARSED_DATA_PATH = environ("PARSED_DATA_PATH")
 elif TARGET == "testing":
-    RDS_NAME = environ("RDS_DB_NAME")
-    RDS_USERNAME = environ("RDS_USERNAME")
-    RDS_PASSWORD = environ("RDS_PASSWORD")
-    RDS_HOSTNAME = environ("RDS_HOSTNAME")
+    RDS_NAME = environ("TEST_RDS_DB_NAME")
+    RDS_USERNAME = environ("TEST_RDS_USERNAME")
+    RDS_PASSWORD = environ("TEST_RDS_PASSWORD")
+    RDS_HOSTNAME = environ("TEST_RDS_HOSTNAME")
+
     # Test file paths
     DATA_PATH = environ("TEST_DATA_PATH")
     SPECS_PATH = environ("TEST_SPECS_PATH")
     PARSED_DATA_PATH = environ("TEST_PARSED_DATA_PATH")
+else:
+    raise RuntimeError(
+        'Target: "{0}" does not exist. Check $TARGET'.format(TARGET)
+    )

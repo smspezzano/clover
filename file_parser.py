@@ -94,7 +94,6 @@ class ImportData:
         CURSOR.execute(search_query)
         exists = CURSOR.fetchone()
         if not exists:
-            print "creating"
             command = "CREATE TABLE {0} (id SERIAL PRIMARY KEY, ".format(self.table_name)
             columns_with_datatype = ["{0} {1}".format(c.column_name, c.datatype) for c in self.columns]
             command += "{0});".format(", ".join(columns_with_datatype))
@@ -158,10 +157,8 @@ class ImportData:
         :return:
         """
         for _file in self.data_files:
-            print _file
             file_name = _file.split("/")[-1]
             new_destination = "{0}{1}{2}".format(DIRECTORY_BASE_PATH, PARSED_DATA_PATH, file_name)
-            print new_destination
             rename(_file, new_destination)
 
 
@@ -213,7 +210,7 @@ def import_data():
             count_command = "SELECT COUNT(*) from {0};".format(table_name)
             CURSOR.execute(count_command)
             count = CURSOR.fetchone()
-            print "Table {0} has {1} items now".format(table_name, count)
+            print "Table {0} has {1} items now".format(table_name, int(count[0]))
 
     CURSOR.close()
     CONNECTION.close()

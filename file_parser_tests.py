@@ -2,6 +2,7 @@
 import os
 import unittest
 
+from database import get_connection
 from file_parser import CollectData, ImportData, DataMapping, SQL_DATA_TEXT, SQL_DATA_BOOLEAN, SQL_DATA_INTEGER
 from settings import DATA_PATH, DIRECTORY_BASE_PATH, PARSED_DATA_PATH
 
@@ -18,6 +19,24 @@ class CollectDataTests(unittest.TestCase):
 
 
 class ImportDataTests(unittest.TestCase):
+
+    def test_env(self):
+        self.assertEquals(os.environ.get('TARGET'), 'testing')
+        print DATA_PATH
+
+    @classmethod
+    def setUpClass(cls):
+        cls.connection = get_connection()
+        cls.cursor = cls.connection.cursor()
+
+    @classmethod
+    def tearDownClass(cls):
+        # drop all tables created by test account
+        drop_table_command = "DROP OWNED BY clover_test;"
+        cls.cursor.execute(drop_table_command)
+        cls.connection.commit()
+        cls.cursor.close()
+        cls.connection.close()
 
     def setUp(self):
         self.files = CollectData()
@@ -62,6 +81,40 @@ class ImportDataTests(unittest.TestCase):
         data3 = DataMapping("10", SQL_DATA_INTEGER)
         formated_data3 = self.import_instance._cast_data(data3)
         self.assertEqual(formated_data3, "10")
+
+    def test_create_database(self):
+        self.import_instance._get_table_name()
+        self.import_instance._get_columns()
+        self.import_instance._get_or_create_table()
+        table_search_command = "SELECT relname FROM pg_class WHERE relname = '{0}'".format(
+            self.import_instance.table_name)
+        self.cursor.execute(table_search_command)
+        exists = self.cursor.fetchone()
+        self.assertEqual(exists[0], 'testformat1')
+
+    def test_create_database_does_not_create_another_one_if_it_exists(self):
+        self.import_instance._get_table_name()
+        self.import_instance._get_columns()
+        self.import_instance._get_or_create_table()
+        table_search_command = "SELECT relname FROM pg_class WHERE relname = '{0}'".format(
+            self.import_instance.table_name)
+        # calling the create db method again
+        self.import_instance._get_or_create_table()
+        self.cursor.execute(table_search_command)
+        exists = self.cursor.fetchall()
+        self.assertEqual(len(exists), 1)
+
+    def test_import_data(self):
+        # should create 3 insertions into the testformat1 table
+        self.import_instance.import_data()
+        select_all_command = "SELECT * from {0};".format(self.import_instance.table_name)
+        self.cursor.execute(select_all_command)
+        data = self.cursor.fetchall()
+        self.assertEqual(len(data), len(self.import_instance.data))
+        for index, instance in enumerate(data):
+            # instance = (1, 'Foonyor', True, 1)
+            raw_data = self.import_instance.data[index]
+            self.assertEqual(raw_data[0].value, instance[1])
 
     def test_move_data_files(self):
         self.import_instance._move_data_files()
